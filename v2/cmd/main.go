@@ -1,7 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"log"
+
+	"github.com/johnnylin-a/uattend-automator/v2/pkg/api"
+)
 
 func main() {
-	fmt.Println("Hello world")
+	log.Println("Executing uAttend automator")
+
+	log.Println("Init api...")
+	api.GetApi()
 }
