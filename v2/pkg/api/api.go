@@ -29,7 +29,6 @@ type apiBehavior struct {
 	OutTime      string
 	BenefitType  string
 	BenefitHours string
-	Notes        string
 }
 
 type apiConfig struct {
@@ -125,7 +124,7 @@ func validateConfig() error {
 		if i := generic.InArray(config.Behavior.BenefitType, validBenefitTypes); i < 0 {
 			return errors.New("invalid benefittype, must be value of either: " + strings.Join(validBenefitTypes, ", "))
 		}
-		if _, err := strconv.ParseFloat(config.Behavior.BenefitHours, 64); len(config.Behavior.BenefitHours) == 0 || err != nil{
+		if _, err := strconv.ParseFloat(config.Behavior.BenefitHours, 64); len(config.Behavior.BenefitHours) == 0 || err != nil {
 			return errors.New("benefit hours invalid")
 		}
 	} else {
