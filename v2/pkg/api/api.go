@@ -40,12 +40,17 @@ type apiConfig struct {
 }
 
 var (
+	isInit            bool = false
 	config            apiConfig
 	validPunchTypes   = []string{"In/Out", "Break", "Lunch", "Benefit"}
 	validBenefitTypes = []string{"VAC - Vacation", "SIC - Sick", "HOL - Holiday", "OTH - Other"}
 )
 
 func InitApi() error {
+	if isInit {
+		return errors.New("already init")
+	}
+	isInit = true
 	err := loadConfig()
 	if err != nil {
 		return err
