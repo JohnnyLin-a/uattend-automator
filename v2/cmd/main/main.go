@@ -16,4 +16,9 @@ func main() {
 		log.Println(err.Error())
 		os.Exit(1)
 	}
+	err = api.Execute()
+	if err != nil {
+		log.Println(err.Error())
+		os.Exit(1)
+	}
 }

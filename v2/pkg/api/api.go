@@ -187,3 +187,21 @@ func loadConfig() error {
 	}
 	return nil
 }
+
+func Execute() error {
+	// Login
+	// Get this week's rows html elements
+	// Loop through rows
+		// Click +
+		// Set Punch Type
+		// if Benefit
+			// Set BenefitType
+			// Set BenefitHours
+		// else
+			// Set InTime
+			// Set OutTime
+		// Click "Save and Close" and wait for model to be gone
+	// Notify result to user through discord
+
+	return nil
+}
