@@ -1,2 +1,5 @@
 .vscode
 config.json
+vendor
+deps
+main

@@ -3,7 +3,9 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"strconv"
@@ -11,6 +13,8 @@ import (
 	"time"
 
 	"github.com/johnnylin-a/uattend-automator/v2/pkg/generic"
+	"github.com/tebeka/selenium"
+	"github.com/tebeka/selenium/firefox"
 )
 
 type credentials struct {
@@ -189,6 +193,42 @@ func loadConfig() error {
 }
 
 func Execute() error {
+	// Init Selenium
+	headless := true
+	const (
+		seleniumPath    = "deps/selenium-server-standalone-3.141.59.jar"
+		geckoDriverPath = "/usr/bin/geckodriver"
+		port            = 4444
+	)
+	selenium.SetDebug(true)
+	opts := []selenium.ServiceOption{
+		selenium.Output(os.Stderr), // Output debug information to STDERR.
+	}
+
+	service, err := selenium.NewGeckoDriverService(geckoDriverPath, port, opts...)
+	if err != nil {
+		return errors.New("cannot init selenium")
+	}
+	defer service.Stop()
+
+	caps := selenium.Capabilities{}
+	if headless {
+		caps.AddFirefox(firefox.Capabilities{
+			Args: []string{"--headless"},
+		})
+	}
+	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d", port))
+	if err != nil {
+		return errors.New("cannot connect to webdriver")
+	}
+	defer wd.Quit()
+
+	if err := wd.Get("http://play.golang.org/?simple=1"); err != nil {
+		return errors.New("cannot go to org url")
+	} else {
+		title, _ := wd.Title()
+		log.Println("playground title:", title)
+	}
 	// Login
 	// Get this week's rows html elements
 	// Loop through rows
