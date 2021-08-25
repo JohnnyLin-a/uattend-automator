@@ -39,7 +39,7 @@ type apiConfig struct {
 	Credentials credentials
 	OrgURL      string
 	SkipDates   []skipDate
-	Workdays    []*int
+	Workdays    []int
 	Behavior    apiBehavior
 }
 
@@ -103,10 +103,7 @@ func validateConfig() error {
 
 	// Check Workdays
 	for i, v := range config.Workdays {
-		if v == nil {
-			return errors.New("workdays #" + strconv.Itoa(i+1) + " is not a valid weekday, must be numbers between 0-6")
-		}
-		switch *v {
+		switch v {
 		case int(time.Sunday):
 			fallthrough
 		case int(time.Monday):
@@ -298,7 +295,10 @@ func Execute() error {
 		// Check if punch is already entered
 		// Get delete button if it exists
 		p, err := wd.FindElements(selenium.ByCSSSelector, "a[class^='js-toggle-delete-punch'][title='Delete'][data-parent-index='"+strconv.Itoa(i)+"']")
-		if err == nil || len(p) > 0 {
+		if err != nil {
+			return errors.New("cannot find already punched rows")
+		}
+		if len(p) > 0 {
 			// Trash button found, punch already done
 			log.Println("Punch already done for row", (i + 1))
 			continue
@@ -340,7 +340,7 @@ func Execute() error {
 		}
 
 		// Check if workday
-		if generic.InArray(rowDate.Weekday(), config.Workdays) < 0 {
+		if generic.InArray(int(rowDate.Weekday()), config.Workdays) < 0 {
 			log.Println("skip row", i, "not a workday")
 			continue
 		}
