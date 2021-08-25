@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"strconv"
@@ -240,6 +241,7 @@ func Execute() error {
 	}
 
 	// Login
+	log.Println("Login...")
 	if err := wd.Get(config.OrgURL); err != nil {
 		return errors.New("cannot go to org url")
 	}
@@ -267,19 +269,105 @@ func Execute() error {
 	if err != nil {
 		return errors.New("cannot click login button")
 	}
-	
-	// Get this week's rows html elements
-	// Loop through rows
-		// Click +
-		// Set Punch Type
-		// if Benefit
-			// Set BenefitType
-			// Set BenefitHours
-		// else
-			// Set InTime
-			// Set OutTime
-		// Click "Save and Close" and wait for model to be gone
-	// Notify result to user through discord
 
+	// Wait for login to finish loading
+	err = wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
+		_, err := wd.FindElement(selenium.ByCSSSelector, "#rowsInner>ul")
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
+	}, (time.Minute * 2))
+	if err != nil {
+		// No need to stop execution if wait failed
+		log.Println("WARNING: Failed to wait after login, perhaps login failed?")
+	}
+
+	timesheetRowsListSelector := "#rowsInner>ul>li"
+	timesheetRows, err := wd.FindElements(selenium.ByCSSSelector, timesheetRowsListSelector)
+	if err != nil {
+		return errors.New("cannot find individual timesheet rows")
+	}
+	
+	// Loop through rows
+	log.Println("Checking punch sheet...")
+	for i, v := range timesheetRows {
+		if i > 14 {
+			break
+		}
+		// Check if punch is already entered
+		// Get delete button if it exists
+		p, err := wd.FindElements(selenium.ByCSSSelector, "a[class^='js-toggle-delete-punch'][title='Delete'][data-parent-index='"+strconv.Itoa(i)+"']")
+		if err == nil || len(p) > 0 {
+			// Trash button found, punch already done
+			log.Println("Punch already done for row", (i + 1))
+			continue
+		}
+
+		// get Date
+		rowsDate, err := v.FindElement(selenium.ByCSSSelector, "ul>li>div>div")
+		if err != nil {
+			return errors.New("cannot find date for this row " + strconv.Itoa(i + 1))
+		}
+		strRaw, err := rowsDate.Text()
+		if err != nil {
+			return errors.New("cannot get row " + strconv.Itoa(i + 1) + "'s date as text")
+		}
+		startStrDate := strings.LastIndex(strRaw, "\n")
+		if startStrDate == -1 {
+			return errors.New("row " + strconv.Itoa(i + 1) + "'s date as text is not what it should be")
+		}
+		strDate := strRaw[startStrDate+1:] // mm/dd/yy -> 01/02/06
+		rowDate, err := time.Parse("01/02/06", strDate)
+		if err != nil {
+			return errors.New("cannot parse row " + strconv.Itoa(i + 1) + "'s date format")
+		}
+
+		// Check for skip dates
+		toSkip := false
+		for _, v2 := range config.SkipDates {
+			// Already validated parse
+			skipDateStart, _ := time.Parse("2006-01-02", v2.Start)
+			skipDateEnd, _ := time.Parse("2006-01-02", v2.End)
+			if (rowDate.After(skipDateStart) && rowDate.Before(skipDateEnd)) || rowDate.Equal(skipDateStart) || rowDate.Equal(skipDateEnd) {
+				toSkip = true
+				break
+			}
+		}
+		if toSkip {
+			log.Println("Skipping row due to skipDate being set.")
+			continue
+		}
+
+		// Check if workday
+		if generic.InArray(rowDate.Weekday(), config.Workdays) < 0 {
+			log.Println("skip row", i, "not a workday")
+			continue
+		}
+
+		// Punch in time
+		
+	}
+	
+	/*
+	TEMP selectors collection:
+	"a[data-date='2021-08-22'][title='Add']": plus button
+	timesheetRowsListSelector + "": date
+	*/
+
+	// Get this week's rows html elements
+	/*
+		Loop through rows
+			Click +
+			Set Punch Type
+			if Benefit
+				Set BenefitType
+				Set BenefitHours
+			else
+				Set InTime
+				Set OutTime
+			Click "Save and Close" and wait for model to be gone
+		Notify result to user through discord
+	*/
 	return nil
 }
