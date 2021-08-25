@@ -205,8 +205,9 @@ func createWebdriver() (*selenium.Service, selenium.WebDriver, error) {
 		port            = 4444
 	)
 	selenium.SetDebug(debug)
-	opts := []selenium.ServiceOption{
-		selenium.Output(os.Stderr), // Output debug information to STDERR.
+	opts := []selenium.ServiceOption{}
+	if debug {
+		opts = append(opts, selenium.Output(os.Stderr))
 	}
 
 	service, err := selenium.NewGeckoDriverService(geckoDriverPath, port, opts...)
@@ -341,7 +342,7 @@ func Execute() error {
 
 		// Check if workday
 		if generic.InArray(int(rowDate.Weekday()), config.Workdays) < 0 {
-			log.Println("skip row", i, "not a workday")
+			log.Println("skip row", (i + 1), "not a workday")
 			continue
 		}
 
