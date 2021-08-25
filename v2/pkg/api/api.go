@@ -44,6 +44,7 @@ type apiConfig struct {
 }
 
 var (
+	debug             bool
 	isInit            bool = false
 	config            apiConfig
 	validPunchTypes   = []string{"In/Out", "Break", "Lunch", "Benefit"}
@@ -192,24 +193,29 @@ func loadConfig() error {
 	return nil
 }
 
-func Execute() error {
+func createWebdriver() (*selenium.Service, *selenium.WebDriver, error) {
 	// Init Selenium
-	headless := true
+	debugStr := os.Getenv("DEBUG")
+	var err error
+	debug, err = strconv.ParseBool(debugStr)
+	if err != nil {
+		debug = false
+	}
+	headless := !debug
 	const (
 		seleniumPath    = "deps/selenium-server-standalone-3.141.59.jar"
 		geckoDriverPath = "/usr/bin/geckodriver"
 		port            = 4444
 	)
-	selenium.SetDebug(true)
+	selenium.SetDebug(debug)
 	opts := []selenium.ServiceOption{
 		selenium.Output(os.Stderr), // Output debug information to STDERR.
 	}
 
 	service, err := selenium.NewGeckoDriverService(geckoDriverPath, port, opts...)
 	if err != nil {
-		return errors.New("cannot init selenium")
+		return nil, nil, errors.New("cannot init selenium service")
 	}
-	defer service.Stop()
 
 	caps := selenium.Capabilities{}
 	if headless {
@@ -219,15 +225,23 @@ func Execute() error {
 	}
 	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d", port))
 	if err != nil {
-		return errors.New("cannot connect to webdriver")
+		return nil, nil, errors.New("cannot connect to webdriver")
 	}
-	defer wd.Quit()
+	return service, &wd, nil
+}
 
-	if err := wd.Get("http://play.golang.org/?simple=1"); err != nil {
+func Execute() error {
+	service, wd, err := createWebdriver()
+	if err != nil {
+		return err
+	}
+	defer service.Stop()
+	if !debug {
+		defer (*wd).Quit()
+	}
+
+	if err := (*wd).Get(config.OrgURL); err != nil {
 		return errors.New("cannot go to org url")
-	} else {
-		title, _ := wd.Title()
-		log.Println("playground title:", title)
 	}
 	// Login
 	// Get this week's rows html elements
