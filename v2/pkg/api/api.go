@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"strconv"
@@ -193,7 +192,7 @@ func loadConfig() error {
 	return nil
 }
 
-func createWebdriver() (*selenium.Service, *selenium.WebDriver, error) {
+func createWebdriver() (*selenium.Service, selenium.WebDriver, error) {
 	// Init Selenium
 	debugStr := os.Getenv("DEBUG")
 	var err error
@@ -227,7 +226,7 @@ func createWebdriver() (*selenium.Service, *selenium.WebDriver, error) {
 	if err != nil {
 		return nil, nil, errors.New("cannot connect to webdriver")
 	}
-	return service, &wd, nil
+	return service, wd, nil
 }
 
 func Execute() error {
@@ -237,13 +236,38 @@ func Execute() error {
 	}
 	defer service.Stop()
 	if !debug {
-		defer (*wd).Quit()
+		defer wd.Quit()
 	}
 
-	if err := (*wd).Get(config.OrgURL); err != nil {
+	// Login
+	if err := wd.Get(config.OrgURL); err != nil {
 		return errors.New("cannot go to org url")
 	}
-	// Login
+	usernameElem, err := wd.FindElement(selenium.ByCSSSelector, "#txtUserName")
+	if err != nil {
+		return errors.New("cannot find login username field")
+	}
+	passwordElem, err := wd.FindElement(selenium.ByCSSSelector, "#txtPassword")
+	if err != nil {
+		return errors.New("cannot find login password field")
+	}
+	loginBtnElem, err := wd.FindElement(selenium.ByCSSSelector, "#loginIn")
+	if err != nil {
+		return errors.New("cannot find login button element")
+	}
+	err = usernameElem.SendKeys(config.Credentials.Login)
+	if err != nil {
+		return errors.New("cannot type login username")
+	}
+	err = passwordElem.SendKeys(config.Credentials.Password)
+	if err != nil {
+		return errors.New("cannot type login password")
+	}
+	err = loginBtnElem.Click()
+	if err != nil {
+		return errors.New("cannot click login button")
+	}
+	
 	// Get this week's rows html elements
 	// Loop through rows
 		// Click +
