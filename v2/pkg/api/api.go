@@ -288,11 +288,11 @@ func Execute() error {
 	if err != nil {
 		return errors.New("cannot find individual timesheet rows")
 	}
-	
+
 	// Loop through rows
 	log.Println("Checking punch sheet...")
 	for i, v := range timesheetRows {
-		if i > 14 {
+		if i >= 14 {
 			break
 		}
 		// Check if punch is already entered
@@ -307,20 +307,20 @@ func Execute() error {
 		// get Date
 		rowsDate, err := v.FindElement(selenium.ByCSSSelector, "ul>li>div>div")
 		if err != nil {
-			return errors.New("cannot find date for this row " + strconv.Itoa(i + 1))
+			return errors.New("cannot find date for this row " + strconv.Itoa(i+1))
 		}
 		strRaw, err := rowsDate.Text()
 		if err != nil {
-			return errors.New("cannot get row " + strconv.Itoa(i + 1) + "'s date as text")
+			return errors.New("cannot get row " + strconv.Itoa(i+1) + "'s date as text")
 		}
 		startStrDate := strings.LastIndex(strRaw, "\n")
 		if startStrDate == -1 {
-			return errors.New("row " + strconv.Itoa(i + 1) + "'s date as text is not what it should be")
+			return errors.New("row " + strconv.Itoa(i+1) + "'s date as text is not what it should be")
 		}
 		strDate := strRaw[startStrDate+1:] // mm/dd/yy -> 01/02/06
 		rowDate, err := time.Parse("01/02/06", strDate)
 		if err != nil {
-			return errors.New("cannot parse row " + strconv.Itoa(i + 1) + "'s date format")
+			return errors.New("cannot parse row " + strconv.Itoa(i+1) + "'s date format")
 		}
 
 		// Check for skip dates
@@ -346,13 +346,13 @@ func Execute() error {
 		}
 
 		// Punch in time
-		
+		log.Println("Would punch row", (i + 1))
 	}
-	
+
 	/*
-	TEMP selectors collection:
-	"a[data-date='2021-08-22'][title='Add']": plus button
-	timesheetRowsListSelector + "": date
+		TEMP selectors collection:
+		"a[data-date='2021-08-22'][title='Add']": plus button
+		timesheetRowsListSelector + "": date
 	*/
 
 	// Get this week's rows html elements
