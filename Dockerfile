@@ -1,4 +1,4 @@
-FROM golang:1.16-buster AS builder
+FROM golang:1.17-buster AS builder
 # build golang app
 COPY ./v2 /root/src/v2/
 WORKDIR /root/src/v2/
