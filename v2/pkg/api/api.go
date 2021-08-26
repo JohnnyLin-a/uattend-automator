@@ -267,6 +267,7 @@ func Execute() error {
 	if err != nil {
 		return errors.New("cannot click login button")
 	}
+	// TODO: Check if login successfully
 
 	// Wait for login to finish loading
 	err = wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
@@ -295,22 +296,22 @@ func Execute() error {
 		}
 		// Check if punch is already entered
 		// Get delete button if it exists
-		p, err := wd.FindElements(selenium.ByCSSSelector, "a[class^='js-toggle-delete-punch'][title='Delete'][data-parent-index='"+strconv.Itoa(i)+"']")
+		temps, err := wd.FindElements(selenium.ByCSSSelector, "a[class^='js-toggle-delete-punch'][title='Delete'][data-parent-index='"+strconv.Itoa(i)+"']")
 		if err != nil {
 			return errors.New("cannot find already punched rows")
 		}
-		if len(p) > 0 {
+		if len(temps) > 0 {
 			// Trash button found, punch already done
 			log.Println("Punch already done for row", (i + 1))
 			continue
 		}
 
 		// get Date
-		rowsDate, err := v.FindElement(selenium.ByCSSSelector, "ul>li>div>div")
+		temp, err := v.FindElement(selenium.ByCSSSelector, "ul>li>div>div")
 		if err != nil {
 			return errors.New("cannot find date for this row " + strconv.Itoa(i+1))
 		}
-		strRaw, err := rowsDate.Text()
+		strRaw, err := temp.Text()
 		if err != nil {
 			return errors.New("cannot get row " + strconv.Itoa(i+1) + "'s date as text")
 		}
@@ -318,8 +319,8 @@ func Execute() error {
 		if startStrDate == -1 {
 			return errors.New("row " + strconv.Itoa(i+1) + "'s date as text is not what it should be")
 		}
-		strDate := strRaw[startStrDate+1:] // mm/dd/yy -> 01/02/06
-		rowDate, err := time.Parse("01/02/06", strDate)
+
+		rowDate, err := time.Parse("01/02/06", strRaw[startStrDate+1:]) // mm/dd/yy -> 01/02/06
 		if err != nil {
 			return errors.New("cannot parse row " + strconv.Itoa(i+1) + "'s date format")
 		}
@@ -346,15 +347,137 @@ func Execute() error {
 			continue
 		}
 
-		// Punch in time
-		log.Println("Would punch row", (i + 1))
-	}
+		// Click add punch in time
+		temp, err = wd.FindElement(selenium.ByCSSSelector, "a[data-date='"+rowDate.Format("2006-01-02")+"'][title='Add']")
+		if err != nil {
+			return errors.New("cannot find add timeslot button")
+		}
+		err = temp.Click()
+		if err != nil {
+			return errors.New("click add timeslot button failed")
+		}
 
-	/*
-		TEMP selectors collection:
-		"a[data-date='2021-08-22'][title='Add']": plus button
-		timesheetRowsListSelector + "": date
-	*/
+		// Wait for modal to be loaded
+		wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
+			l, err := wd.FindElements(selenium.ByCSSSelector, "#modalContainer")
+			if err != nil {
+				return false, err
+			}
+			if len(l) > 0 {
+				return true, nil
+			}
+			return false, nil
+		}, time.Minute*1)
+
+		// Click punch type dropdown
+		temp, err = wd.FindElement(selenium.ByCSSSelector, "#addPunchForm>div.col-group>div>.select-wrapper>input.select-dropdown.dropdown-trigger")
+		if err != nil {
+			return errors.New("cannot find punch type dropdown")
+		}
+		err = temp.Click()
+		if err != nil {
+			return errors.New("cannot expand punch type dropdown")
+		}
+		temps, err = wd.FindElements(selenium.ByCSSSelector, "#addPunchForm>div.col-group>div>.select-wrapper>ul>li")
+		if err != nil || len(temps) == 0 {
+			return errors.New("cannot find punch type dropdown elements")
+		}
+		tempMap := make(map[string]selenium.WebElement)
+		for i, v := range temps {
+			s, err := v.GetAttribute("class")
+			if err == nil && s == "disabled" {
+				continue
+			}
+			s, err = v.Text()
+			if err != nil {
+				return errors.New("cannot find punch type #" + strconv.Itoa(i+1))
+			}
+			tempMap[s] = v
+		}
+
+		if _, ok := tempMap[config.Behavior.PunchType]; !ok {
+			return errors.New("punch type \"" + config.Behavior.PunchType + "\" does not exist")
+		}
+		temp = tempMap[config.Behavior.PunchType]
+		tempMap = nil
+		temp.Click()
+
+		if config.Behavior.PunchType == "Benefit" {
+			// Wait for benefit types to load
+			wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
+				temps, err := wd.FindElements(selenium.ByCSSSelector, "#benefitWrapper>div>div>div>ul>li")
+				if err != nil || len(temps) == 0 {
+					return false, err
+				}
+				return true, nil
+			}, time.Minute * 1)
+
+			// Click benefit type dropdown
+			temp, err = wd.FindElement(selenium.ByCSSSelector, "#benefitWrapper>div>div>div>input.select-dropdown.dropdown-trigger")
+			if err != nil {
+				return errors.New("cannot find benefit type dropdown")
+			}
+			err = temp.Click()
+			if err != nil {
+				return errors.New("cannot expand benefit type dropdown")
+			}
+			// Get list of benefit types
+			temps, err = wd.FindElements(selenium.ByCSSSelector, "#benefitWrapper>div>div>div>ul>li>span")
+			if err != nil || len(temps) == 0 {
+				return errors.New("cannot find benefit type list")
+			}
+			tempMap = make(map[string]selenium.WebElement)
+			for _, v := range temps {
+				s, err := v.GetAttribute("class")
+				if err == nil && s == "disabled" {
+					continue
+				}
+				s, err = v.Text()
+				if err != nil {
+					return errors.New("cannot find benefit type #" + strconv.Itoa(i+1))
+				}
+				tempMap[s] = v
+			}
+			if _, ok := tempMap[config.Behavior.BenefitType]; !ok {
+				// TO REMOVE AFTER 
+				for k := range tempMap {
+					log.Println(k)
+				}
+				return errors.New("benefit type \"" + config.Behavior.BenefitType + "\" does not exist")
+			}
+			temp = tempMap[config.Behavior.BenefitType]
+			tempMap = nil
+			err = temp.Click()
+			if err != nil {
+				return errors.New("cannot click benefit type " + config.Behavior.BenefitType)
+			}
+			
+			// Set Benefit Hours
+			temp, err = wd.FindElement(selenium.ByCSSSelector, "#benefit_hours")
+			if err != nil {
+				return errors.New("cannot find benefit hours input field")
+			}
+			err = temp.Click()
+			if err != nil {
+				return errors.New("cannot click benefit hours input field")
+			}
+			err = temp.SendKeys(config.Behavior.BenefitHours)
+			if err != nil {
+				return errors.New("cannot type in benefit hours")
+			}
+
+			// Click save and close
+			_, err = wd.FindElement(selenium.ByCSSSelector, "#addPunch>div>div>div>span>button[class^='js-add-confirm'][data-next='false']")
+			if err != nil{
+				return errors.New("cannot find submit and close button")
+			}
+			log.Println("stopped at found submit and close button")
+		} else {
+			// TODO: To handle In/Out, Break, Lunch
+			log.Println("WARNING: did not implement In/Out, Break, Lunch")
+		}
+		return nil
+	}
 
 	// Get this week's rows html elements
 	/*
