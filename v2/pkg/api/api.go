@@ -290,7 +290,7 @@ func Execute() error {
 
 	// Loop through rows
 	log.Println("Checking punch sheet...")
-	for i, _ := range timesheetRows {
+	for i := range timesheetRows {
 		if i >= 14 {
 			break
 		}
