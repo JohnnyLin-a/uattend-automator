@@ -44,11 +44,12 @@ type apiConfig struct {
 }
 
 var (
-	debug             bool
-	isInit            bool = false
-	config            apiConfig
-	validPunchTypes   = []string{"In/Out", "Break", "Lunch", "Benefit"}
-	validBenefitTypes = []string{"VAC - Vacation", "SIC - Sick", "HOL - Holiday", "OTH - Other"}
+	debug              bool
+	isInit             bool = false
+	config             apiConfig
+	validPunchTypes        = []string{"In/Out", "Break", "Lunch", "Benefit"}
+	validBenefitTypes      = []string{"VAC - Vacation", "SIC - Sick", "HOL - Holiday", "OTH - Other"}
+	automatedRowsCount int = 0
 )
 
 func InitApi() error {
@@ -282,15 +283,14 @@ func Execute() error {
 		log.Println("WARNING: Failed to wait after login, perhaps login failed?")
 	}
 
-	timesheetRowsListSelector := "#rowsInner>ul>li"
-	timesheetRows, err := wd.FindElements(selenium.ByCSSSelector, timesheetRowsListSelector)
+	timesheetRows, err := wd.FindElements(selenium.ByCSSSelector, "#rowsInner>ul>li")
 	if err != nil {
 		return errors.New("cannot find individual timesheet rows")
 	}
 
 	// Loop through rows
 	log.Println("Checking punch sheet...")
-	for i, v := range timesheetRows {
+	for i, _ := range timesheetRows {
 		if i >= 14 {
 			break
 		}
@@ -307,7 +307,10 @@ func Execute() error {
 		}
 
 		// get Date
-		temp, err := v.FindElement(selenium.ByCSSSelector, "ul>li>div>div")
+		var temp selenium.WebElement
+		temps, _ = wd.FindElements(selenium.ByCSSSelector, "#rowsInner>ul>li")
+		temp = temps[i]
+		temp, err = temp.FindElement(selenium.ByCSSSelector, "ul>li>div>div")
 		if err != nil {
 			return errors.New("cannot find date for this row " + strconv.Itoa(i+1))
 		}
@@ -361,7 +364,7 @@ func Execute() error {
 		wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
 			l, err := wd.FindElements(selenium.ByCSSSelector, "#modalContainer")
 			if err != nil {
-				return false, err
+				return false, nil
 			}
 			if len(l) > 0 {
 				return true, nil
@@ -383,16 +386,16 @@ func Execute() error {
 			return errors.New("cannot find punch type dropdown elements")
 		}
 		tempMap := make(map[string]selenium.WebElement)
-		for i, v := range temps {
-			s, err := v.GetAttribute("class")
+		for i3, v3 := range temps {
+			s, err := v3.GetAttribute("class")
 			if err == nil && s == "disabled" {
 				continue
 			}
-			s, err = v.Text()
+			s, err = v3.Text()
 			if err != nil {
-				return errors.New("cannot find punch type #" + strconv.Itoa(i+1))
+				return errors.New("cannot find punch type #" + strconv.Itoa(i3+1))
 			}
-			tempMap[s] = v
+			tempMap[s] = v3
 		}
 
 		if _, ok := tempMap[config.Behavior.PunchType]; !ok {
@@ -407,10 +410,10 @@ func Execute() error {
 			wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
 				temps, err := wd.FindElements(selenium.ByCSSSelector, "#benefitWrapper>div>div>div>ul>li")
 				if err != nil || len(temps) == 0 {
-					return false, err
+					return false, nil
 				}
 				return true, nil
-			}, time.Minute * 1)
+			}, time.Minute*1)
 
 			// Click benefit type dropdown
 			temp, err = wd.FindElement(selenium.ByCSSSelector, "#benefitWrapper>div>div>div>input.select-dropdown.dropdown-trigger")
@@ -427,22 +430,18 @@ func Execute() error {
 				return errors.New("cannot find benefit type list")
 			}
 			tempMap = make(map[string]selenium.WebElement)
-			for _, v := range temps {
-				s, err := v.GetAttribute("class")
+			for i4, v4 := range temps {
+				s, err := v4.GetAttribute("class")
 				if err == nil && s == "disabled" {
 					continue
 				}
-				s, err = v.Text()
+				s, err = v4.Text()
 				if err != nil {
-					return errors.New("cannot find benefit type #" + strconv.Itoa(i+1))
+					return errors.New("cannot find benefit type #" + strconv.Itoa(i4+1))
 				}
-				tempMap[s] = v
+				tempMap[s] = v4
 			}
 			if _, ok := tempMap[config.Behavior.BenefitType]; !ok {
-				// TO REMOVE AFTER 
-				for k := range tempMap {
-					log.Println(k)
-				}
 				return errors.New("benefit type \"" + config.Behavior.BenefitType + "\" does not exist")
 			}
 			temp = tempMap[config.Behavior.BenefitType]
@@ -451,7 +450,7 @@ func Execute() error {
 			if err != nil {
 				return errors.New("cannot click benefit type " + config.Behavior.BenefitType)
 			}
-			
+
 			// Set Benefit Hours
 			temp, err = wd.FindElement(selenium.ByCSSSelector, "#benefit_hours")
 			if err != nil {
@@ -467,16 +466,30 @@ func Execute() error {
 			}
 
 			// Click save and close
-			_, err = wd.FindElement(selenium.ByCSSSelector, "#addPunch>div>div>div>span>button[class^='js-add-confirm'][data-next='false']")
-			if err != nil{
+			temp, err = wd.FindElement(selenium.ByCSSSelector, "#addPunch>div>div>div>span>button[class^='js-add-confirm'][data-next='false']")
+			if err != nil {
 				return errors.New("cannot find submit and close button")
 			}
-			log.Println("stopped at found submit and close button")
+			err = temp.Click()
+			if err != nil {
+				return errors.New("cannot click close and save button")
+			}
+			err = wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
+				_, err := wd.FindElement(selenium.ByCSSSelector, "#modalContainer>div")
+				if err != nil {
+					return true, nil
+				}
+				return false, nil
+			}, time.Minute*2)
+			if err != nil {
+				return errors.New("cannot wait for modal to close after save")
+			}
+			automatedRowsCount++
+
 		} else {
 			// TODO: To handle In/Out, Break, Lunch
 			log.Println("WARNING: did not implement In/Out, Break, Lunch")
 		}
-		return nil
 	}
 
 	// Get this week's rows html elements
@@ -494,4 +507,19 @@ func Execute() error {
 		Notify result to user through discord
 	*/
 	return nil
+}
+
+func GetAutomatedRowsCount() (int) {
+	return automatedRowsCount
+}
+
+func SetAutomatedRowsCount(c int) {
+	var err error
+	debug, err = strconv.ParseBool(os.Getenv("DEBUG"))
+	if err != nil {
+		debug = false
+	}
+	if debug {
+		automatedRowsCount = c
+	}
 }
