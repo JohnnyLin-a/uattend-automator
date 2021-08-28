@@ -528,6 +528,25 @@ func Execute() error {
 			Click "Save and Close" and wait for model to be gone
 		Notify result to user through discord
 	*/
+
+	// Logout 
+	// Reuse loginBtnElem for logout button
+	loginBtnElem, err = wd.FindElement(selenium.ByCSSSelector, "#userDropdownMenuSelector")
+	if err != nil {
+		return errors.New("cannot find logout dropdown")
+	}
+	err = loginBtnElem.Click()
+	if err != nil {
+		return errors.New("cannot click logout dropdown")
+	}
+	loginBtnElem, err = wd.FindElement(selenium.ByCSSSelector, "#logoutLink")
+	if err != nil {
+		return errors.New("cannot find logout button")
+	}
+	err = loginBtnElem.Click()
+	if err != nil {
+		return errors.New("cannot click logout button")
+	}
 	return nil
 }
 
