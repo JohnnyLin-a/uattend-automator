@@ -64,7 +64,11 @@ func loadConfig() error {
 func Notify(count int, apierr error) error {
 	log.Println("Notifying on Discord")
 	body := make(map[string]interface{})
-	body["content"] = "<@" + config.Details.Mention + "> Automated " + strconv.Itoa(count) + " rows"
+	if apierr != nil {
+		body["content"] = "<@" + config.Details.Mention + "> Automated " + strconv.Itoa(count) + " row(s) with error: " + apierr.Error()
+	} else {
+		body["content"] = "<@" + config.Details.Mention + "> Automated " + strconv.Itoa(count) + " row(s)"
+	}
 	byteBody, _ := json.Marshal(body)
 	responseBody := bytes.NewBuffer(byteBody)
 	resp, err := http.Post(config.Details.Webhook, "application/json", responseBody)
