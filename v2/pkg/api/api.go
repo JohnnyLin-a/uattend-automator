@@ -289,19 +289,23 @@ func Execute() error {
 	if err != nil {
 		return errors.New("cannot click login button")
 	}
-	// TODO: Check if login successfully
 
 	// Wait for login to finish loading
 	err = wd.WaitWithTimeout(func(wd selenium.WebDriver) (bool, error) {
-		_, err := wd.FindElement(selenium.ByCSSSelector, "#rowsInner>ul")
+		_, err := wd.FindElement(selenium.ByCSSSelector, "#ValidationSummary1>ul>li")
+		url, _ := wd.CurrentURL()
+		if err == nil && url == config.OrgURL {
+			return false, errors.New("login problem")
+		}
+		_, err = wd.FindElement(selenium.ByCSSSelector, "#rowsInner>ul")
 		if err != nil {
 			return false, nil
 		}
 		return true, nil
 	}, (time.Minute * 2))
 	if err != nil {
-		// No need to stop execution if wait failed
-		log.Println("WARNING: Failed to wait after login, perhaps login failed?")
+		log.Println("Failed to wait after login, perhaps login failed?")
+		return err
 	}
 
 	_, err = wd.FindElements(selenium.ByCSSSelector, "#rowsInner>ul>li")
