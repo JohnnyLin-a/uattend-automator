@@ -4,16 +4,6 @@
         "Password": ""
     },
     "OrgURL": "",
-    "SkipDates": [
-        {
-            "Start": "2021-08-01",
-            "End": "2021-08-02"
-        },
-        {
-            "Start": "2021-08-03",
-            "End": "2021-08-04"
-        }
-    ],
     "Workdays": [1,2,3,4,5],
     "behavior": {
         "PunchType": "Benefit",

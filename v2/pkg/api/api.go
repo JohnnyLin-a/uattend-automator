@@ -188,6 +188,27 @@ func loadConfig() error {
 	if err != nil {
 		return errors.New("config file json syntax error")
 	}
+
+	// Load config from os env UATTEND_SKIPDAYS first
+	jsonBytes = []byte(os.Getenv("UATTEND_SKIPDAYS"))
+
+	// Otherwise load config from config.json
+	if len(jsonBytes) == 0 {
+		jsonFile, err := os.Open("skipDays.json")
+		if err != nil {
+			config.SkipDates = []skipDate{}
+			return nil
+		}
+		jsonBytes, err = ioutil.ReadAll(jsonFile)
+		if err != nil {
+			return errors.New("skipDates file corrupted?")
+		}
+	}
+	err = json.Unmarshal(jsonBytes, &config.SkipDates)
+	if err != nil {
+		return errors.New("skipDates file json syntax error")
+	}
+
 	return nil
 }
 
@@ -283,17 +304,14 @@ func Execute() error {
 		log.Println("WARNING: Failed to wait after login, perhaps login failed?")
 	}
 
-	timesheetRows, err := wd.FindElements(selenium.ByCSSSelector, "#rowsInner>ul>li")
+	_, err = wd.FindElements(selenium.ByCSSSelector, "#rowsInner>ul>li")
 	if err != nil {
 		return errors.New("cannot find individual timesheet rows")
 	}
 
 	// Loop through rows
 	log.Println("Checking punch sheet...")
-	for i := range timesheetRows {
-		if i >= 14 {
-			break
-		}
+	for i := 0; i < 14; i++ {
 		// Check if punch is already entered
 		// Get delete button if it exists
 		temps, err := wd.FindElements(selenium.ByCSSSelector, "a[class^='js-toggle-delete-punch'][title='Delete'][data-parent-index='"+strconv.Itoa(i)+"']")
@@ -509,7 +527,7 @@ func Execute() error {
 	return nil
 }
 
-func GetAutomatedRowsCount() (int) {
+func GetAutomatedRowsCount() int {
 	return automatedRowsCount
 }
 
