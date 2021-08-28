@@ -5,20 +5,34 @@ import (
 	"os"
 
 	"github.com/johnnylin-a/uattend-automator/v2/pkg/api"
+	"github.com/johnnylin-a/uattend-automator/v2/pkg/discordwebhook"
 )
 
 func main() {
 	log.Println("Executing uAttend automator")
 
 	log.Println("Init api...")
-	err := api.InitApi()
-	if err != nil {
-		log.Println(err.Error())
+	apierr := api.InitApi()
+	if apierr != nil {
+		log.Println(apierr.Error())
 		os.Exit(1)
 	}
-	err = api.Execute()
-	if err != nil {
-		log.Println(err.Error())
+	apierr = api.Execute()
+	if apierr != nil {
+		log.Println(apierr.Error())
+	}
+
+	discorderr := discordwebhook.Init()
+	if discorderr != nil {
+		log.Println(discorderr.Error())
+	} else {
+		discorderr = discordwebhook.Notify(api.GetAutomatedRowsCount(), apierr)
+		if discorderr != nil {
+			log.Println(discorderr.Error())
+		}
+	}
+
+	if apierr != nil {
 		os.Exit(1)
 	}
 }

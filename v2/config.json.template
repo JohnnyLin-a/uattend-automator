@@ -11,5 +11,9 @@
         "OutTime": "",
         "BenefitType": "OTH - Other",
         "BenefitHours": "8.00"
+    },
+    "Discord": {
+        "Webhook": "",
+        "Mention": "DISCORD_USER_ID"
     }
 }

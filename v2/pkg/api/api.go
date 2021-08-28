@@ -179,6 +179,7 @@ func loadConfig() error {
 		if err != nil {
 			return errors.New("no config found")
 		}
+		defer jsonFile.Close()
 		jsonBytes, err = ioutil.ReadAll(jsonFile)
 		if err != nil {
 			return errors.New("config file corrupted?")
@@ -194,12 +195,13 @@ func loadConfig() error {
 
 	// Otherwise load config from config.json
 	if len(jsonBytes) == 0 {
-		jsonFile, err := os.Open("skipDays.json")
+		jsonFile2, err := os.Open("skipDays.json")
 		if err != nil {
 			config.SkipDates = []skipDate{}
 			return nil
 		}
-		jsonBytes, err = ioutil.ReadAll(jsonFile)
+		defer jsonFile2.Close()
+		jsonBytes, err = ioutil.ReadAll(jsonFile2)
 		if err != nil {
 			return errors.New("skipDates file corrupted?")
 		}
