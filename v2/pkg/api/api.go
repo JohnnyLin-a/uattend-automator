@@ -509,27 +509,12 @@ func Execute() error {
 				return errors.New("cannot wait for modal to close after save")
 			}
 			automatedRowsCount++
-
+			log.Println("Clocked in row", i+1)
 		} else {
 			// TODO: To handle In/Out, Break, Lunch
 			log.Println("WARNING: did not implement In/Out, Break, Lunch")
 		}
 	}
-
-	// Get this week's rows html elements
-	/*
-		Loop through rows
-			Click +
-			Set Punch Type
-			if Benefit
-				Set BenefitType
-				Set BenefitHours
-			else
-				Set InTime
-				Set OutTime
-			Click "Save and Close" and wait for model to be gone
-		Notify result to user through discord
-	*/
 
 	// Logout
 	// Reuse loginBtnElem for logout button
