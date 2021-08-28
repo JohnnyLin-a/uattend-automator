@@ -1,0 +1,35 @@
+name: run-app
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  run-app:
+    runs-on: ubuntu-latest
+    env:
+      UATTEND_CONFIG: ${{ secrets.UATTEND_CONFIG }}
+      UATTEND_SKIPDAYS: ${{ secrets.UATTEND_SKIPDAYS }}
+    steps:
+      - 
+        name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: master
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.17'
+      -
+        name: Install pre-requisites
+        run : |
+          cd v2
+          wget -P deps https://github.com/SeleniumHQ/selenium/releases/download/selenium-3.141.59/selenium-server-standalone-3.141.59.jar
+      -
+        name: Execute app
+        run : |
+          go run ./cmd/main/main.go
