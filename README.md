@@ -34,7 +34,7 @@ Main steps:
 8. For the secret's name type in `UATTEND_CONFIG`.
 9. For the secret's value, fill in the following template and copy paste it into the text box and then `Add secret`.  
     Replace these values:
-      - `YOUR_USERNAME_USUALLY_YOUR_EMAIL`: Your username or email
+      - `YOUR_USERNAME`: Your username
       - `YOUR_PASSWORD`: Your password
       - `YOUR_ORGANIZATION_NAME`: Your organization name
       - `YOUR_WEBHOOK`: Your Discord webhook URL
@@ -44,7 +44,7 @@ Template:
 ```
 {
     "Credentials": {
-        "Login": "YOUR_USERNAME_USUALLY_YOUR_EMAIL",
+        "Login": "YOUR_USERNAME",
         "Password": "YOUR_PASSWORD"
     },
     "OrgURL": "https://v2.trackmytime.com/YOUR_ORGANIZATION_NAME",

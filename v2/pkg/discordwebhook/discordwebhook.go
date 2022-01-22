@@ -65,9 +65,9 @@ func Notify(count int, apierr error) error {
 	log.Println("Notifying on Discord")
 	body := make(map[string]interface{})
 	if apierr != nil {
-		body["content"] = "<@" + config.Details.Mention + "> Automated " + strconv.Itoa(count) + " row(s) with error: " + apierr.Error()
+		body["content"] = config.Details.Mention + " Automated " + strconv.Itoa(count) + " row(s) with error: " + apierr.Error()
 	} else {
-		body["content"] = "<@" + config.Details.Mention + "> Automated " + strconv.Itoa(count) + " row(s)"
+		body["content"] = config.Details.Mention + " Automated " + strconv.Itoa(count) + " row(s)"
 	}
 	byteBody, _ := json.Marshal(body)
 	responseBody := bytes.NewBuffer(byteBody)
