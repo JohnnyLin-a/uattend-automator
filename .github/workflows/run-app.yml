@@ -10,7 +10,7 @@ on:
 
 jobs:
   run-app:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       UATTEND_CONFIG: ${{ secrets.UATTEND_CONFIG }}
       UATTEND_SKIPDAYS: ${{ secrets.UATTEND_SKIPDAYS }}
@@ -23,14 +23,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '^1.17'
-      -
-        name: Install pre-requisites
-        run : |
-          cd v2
-          wget -P deps https://github.com/SeleniumHQ/selenium/releases/download/selenium-3.141.59/selenium-server-standalone-3.141.59.jar
+          go-version: '^1.18'
       -
         name: Execute app
         run : |
-          cd v2
           go run ./cmd/main/main.go
