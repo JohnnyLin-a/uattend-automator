@@ -4,3 +4,4 @@ vendor
 deps
 main
 skipDates.json
+!cmd/main

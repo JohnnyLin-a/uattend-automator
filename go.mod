@@ -1,4 +1,4 @@
-module github.com/johnnylin-a/uattend-automator/v2
+module github.com/johnnylin-a/uattend-automator
 
 go 1.16
 

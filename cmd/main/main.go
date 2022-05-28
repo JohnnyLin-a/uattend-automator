@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/johnnylin-a/uattend-automator/v2/pkg/api"
-	"github.com/johnnylin-a/uattend-automator/v2/pkg/discordwebhook"
+	"github.com/johnnylin-a/uattend-automator/pkg/api"
+	"github.com/johnnylin-a/uattend-automator/pkg/discordwebhook"
 )
 
 func main() {

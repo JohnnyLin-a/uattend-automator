@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/johnnylin-a/uattend-automator/v2/pkg/generic"
+	"github.com/johnnylin-a/uattend-automator/pkg/generic"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/firefox"
 )
